@@ -1,0 +1,370 @@
+openapi: 3.0.2
+info:
+  title: Annotation API
+  version: 1.0.0-alpha
+
+paths:
+  /slides/{slideId}:
+    get:
+      summary: Returns a list of users and their annotations for a specific slide
+      parameters:
+        - name: slideId
+          in: path
+          required: true
+          description: id of the slide
+          schema:
+            type: string
+        - name: x
+          in: query
+          description: x coordinate of the optional viewport
+          schema:
+            type: integer
+            minimum: 0
+        - name: y
+          in: query
+          description: y coordinate of the optional viewport
+          schema:
+            type: integer
+            minimum: 0
+        - name: width
+          in: query
+          description: width of the optional viewport
+          schema:
+            type: integer
+            minimum: 0
+        - name: height
+          in: query
+          description: height of the optional viewport
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        '200':
+          description: A JSON array of users and their annotations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+
+  /slides/{slideId}/users/{userId}:
+    get:
+      summary: Returns a user and his annotations
+      parameters:
+        - name: slideId
+          in: path
+          required: true
+          description: id of the slide
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          description: id of the user
+          schema:
+            type: string
+        - name: x
+          in: query
+          description: x coordinate of the optional viewport
+          schema:
+            type: integer
+            minimum: 0
+        - name: y
+          in: query
+          description: y coordinate of the optional viewport
+          schema:
+            type: integer
+            minimum: 0
+        - name: width
+          in: query
+          description: width of the optional viewport
+          schema:
+            type: integer
+            minimum: 0
+        - name: height
+          in: query
+          description: height of the optional viewport
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        '200':
+          description: A JSON object of the user and his annoations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: A user has no annotations for this slide
+
+    post:
+      summary: Create or update annotations of a user
+      parameters:
+        - name: slideId
+          in: path
+          required: true
+          description: id of the slide
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          description: id of the user
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: a list of annotations
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Annotation'
+
+      responses:
+        '200':
+          description: Returns the created or updated annotations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Annotation'
+
+    delete:
+      summary: Delete annotations
+      parameters:
+        - name: slideId
+          in: path
+          required: true
+          description: id of the slide
+          schema:
+            type: string
+        - name: userId
+          in: path
+          required: true
+          description: id of the user
+          schema:
+            type: string
+        - name: annotationIds
+          in: query
+          required: true
+          description: annotation id's, which have to be deleted, separated by a comma
+          schema:
+            type: string
+            example: "fc767818-fd9e-4757-9781-f751e4b1d984,e4b41315-57e2-4375-8aa3-0b2fa35e5ced"
+      responses:
+        '200':
+          description: When deleting was successful
+
+
+components:
+  schemas:
+    User:
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: id of the user
+        annotations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Annotation'
+          description: list of annotations of the user
+      required:
+        - userId
+        - annotations
+
+    Annotation:
+      oneOf:
+        - $ref: '#/components/schemas/Circle'
+        - $ref: '#/components/schemas/Point'
+        - $ref: '#/components/schemas/Polygon'
+        - $ref: '#/components/schemas/Arrow'
+
+    Circle:
+      properties:
+        annotationId:
+          type: string
+          format: uuid
+          example: 'fc767818-fd9e-4757-9781-f751e4b1d984'
+          description: id of the annotation
+        type:
+          type: string
+          enum: [circle]
+          description: type of the annotation
+        coordinates:
+          type: array
+          items:
+            type: integer
+            format: int32
+          minItems: 2
+          maxItems: 2
+          example: [100, 200]
+          description: center of the circle [x, y]
+        radius:
+          type: integer
+          format: int32
+          example: 50
+          description: radius of the circle
+        properties:
+          $ref: '#/components/schemas/Properties'
+        metadata:
+          # see https://stackoverflow.com/a/41752575
+          allOf:
+            - $ref: '#/components/schemas/Metadata'
+          readOnly: true
+      required:
+        - annotationId
+        - type
+        - coordinates
+        - radius
+        - properties
+        - metadata
+
+    Point:
+      properties:
+        annotationId:
+          type: string
+          format: uuid
+          example: 'fc767818-fd9e-4757-9781-f751e4b1d984'
+          description: id of the annotation
+        type:
+          type: string
+          enum: [point]
+          description: type of the annotation
+        coordinates:
+          type: array
+          items:
+            type: integer
+            format: int32
+          minItems: 2
+          maxItems: 2
+          example: [100, 200]
+          description: coordinates of the point
+        properties:
+          $ref: '#/components/schemas/Properties'
+        metadata:
+          # see https://stackoverflow.com/a/41752575
+          allOf:
+            - $ref: '#/components/schemas/Metadata'
+          readOnly: true
+      required:
+        - annotationId
+        - type
+        - coordinates
+        - properties
+        - metadata
+
+    Polygon:
+      properties:
+        annotationId:
+          type: string
+          format: uuid
+          example: 'fc767818-fd9e-4757-9781-f751e4b1d984'
+          description: id of the annotation
+        type:
+          type: string
+          enum: [polygon]
+          description: type of the annotation
+        coordinates:
+          type: array
+          items:
+            type: array
+            items:
+              type: integer
+              format: int32
+            minItems: 2
+            maxItems: 2
+          minItems: 3
+          example: [ [0, 100], [100, 0], [100, 100]]
+          description: list of coordinates
+        properties:
+          $ref: '#/components/schemas/Properties'
+        metadata:
+          # see https://stackoverflow.com/a/41752575
+          allOf:
+            - $ref: '#/components/schemas/Metadata'
+          readOnly: true
+      required:
+        - annotationId
+        - type
+        - coordinates
+        - properties
+        - metadata
+
+    Arrow:
+      properties:
+        annotationId:
+          type: string
+          format: uuid
+          example: 'fc767818-fd9e-4757-9781-f751e4b1d984'
+          description: id of the annotation
+        type:
+          type: string
+          enum: [arrow]
+          description: type of the annotation
+        coordinates:
+          type: array
+          items:
+            type: array
+            items:
+              type: integer
+              format: int32
+            minItems: 2
+            maxItems: 2
+          minItems: 2
+          maxItems: 2
+          example: [ [100, 100], [200, 200]]
+          description: start coordinates and end coordinates (arrowhead)
+        properties:
+          $ref: '#/components/schemas/Properties'
+        metadata:
+          # see https://stackoverflow.com/a/41752575
+          allOf:
+            - $ref: '#/components/schemas/Metadata'
+          readOnly: true
+      required:
+        - annotationId
+        - type
+        - coordinates
+        - properties
+        - metadata
+
+    Properties:
+      properties:
+        title:
+          type: string
+          example: Lorem ipsum
+          description: title of the annotation
+        description:
+          type: string
+          example: Lorem ipsum dolor sit amet, consetetur
+          description: description of the annotation
+        tags:
+          type: array
+          items:
+            type: string
+          example: [tag1, tag2]
+          description: list of tags
+      required:
+        - title
+
+    Metadata:
+      properties:
+        createdAt:
+          type: integer
+          format: int64
+          example: 1549623628309
+          description: creation date of the annotation
+        updatedAt:
+          type: integer
+          format: int64
+          example: 1549623628309
+          description: date of the last update
+      required:
+        - createdAt
+        - updatedAt
+      description: informations set by the annotation server
