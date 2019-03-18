@@ -337,10 +337,12 @@ components:
       properties:
         title:
           type: string
+          maxLength: 100
           example: Lorem ipsum
           description: title of the annotation
         description:
           type: string
+          maxLength: 1000
           example: Lorem ipsum dolor sit amet, consetetur
           description: description of the annotation
         tags:
